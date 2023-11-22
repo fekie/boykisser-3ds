@@ -1,0 +1,3 @@
+This is just a file that makes the romfs directory stay in the repo.
+
+If it isn't, then `cargo 3ds build` will fail.
