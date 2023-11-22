@@ -1,1 +1,1 @@
-# first-3ds-rust-project
+# boykisser-3ds
