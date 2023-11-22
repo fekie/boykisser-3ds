@@ -1,13 +1,15 @@
 # boykisser-3ds
 A silly little Rust Homebrew program for the 3ds.
 
-# Media
+# Example Media
 <img src="assets/boykisser_3ds_image.jpeg" height="500px" alt="A picture of this program running on a 3ds.">
 
 https://github.com/Chloe-Woahie/boykisser-3ds/assets/68732833/28c51733-f53e-4d6d-b4e7-794f69b46d32
 
 # Usage
-This is somewhat a complicated process that I had to come up with through trial-and-error. This is because these tools were primarily written for use on Linux. This guide has been written only for Windows users as I do not have an easy way of testing steps on other platforms. 
+The precompiled .3dsx file can be found on the [releases](https://github.com/Chloe-Woahie/boykisser-3ds/releases) page.
+
+Otherwise, you can choose to follow the steps below to compile it yourself, as long as you're on Windows. This is a somewhat complicated process. This is because these tools were primarily written for use on Linux. This guide has been written only for Windows users as I do not have an easy way of testing steps on other platforms. 
 
 ## Downloading Prerequisites
 
