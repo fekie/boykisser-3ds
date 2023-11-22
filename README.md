@@ -1,6 +1,11 @@
 # boykisser-3ds
 This is a silly little Rust Homebrew program for the 3ds.
 
+# Media
+<img src="assets/boykisser_3ds_image.jpeg" height="500px" alt="A picture of this program running on a 3ds.">
+
+https://github.com/Chloe-Woahie/boykisser-3ds/assets/68732833/bbb67a54-ff9f-4b41-ac45-3446a11098f5
+
 # Usage
 This is somewhat a complicated process that I had to come up with through trial-and-error. This is because these tools were primarily written for use on Linux. This guide has been written only for Windows users as I do not have an easy way of testing steps on other platforms. 
 
