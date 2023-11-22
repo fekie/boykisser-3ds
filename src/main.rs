@@ -4,17 +4,11 @@
 use ctru::prelude::*;
 use ctru::services::gfx::{Flush, Screen, Swap};
 
-/// Ferris image taken from <https://rustacean.net> and scaled down to 320x240px.
-/// To regenerate the data, you will need to install `imagemagick` and run this
-/// command from the `examples` directory:
+/// Image of a boykisser. Scaled to 320x240px (the size of the bottom screen).
 ///
-/// ```sh
-/// magick assets/ferris.png -channel-fx "red<=>blue" -rotate 90 assets/ferris.rgb
-/// ```
+/// To create suitable data, you will need to install `imagemagick` and run this command after scaling:
 ///
-/// This creates an image appropriate for the default frame buffer format of
-/// [`Bgr8`](ctru::services::gspgpu::FramebufferFormat::Bgr8)
-/// and rotates the image 90° to account for the portrait mode screen.
+/// `$ magick assets/boykisser.png -channel-fx "red<=>blue" -rotate 90 assets/boykisser.rgb`
 static IMAGE: &[u8] = include_bytes!("../assets/boykisser.rgb");
 
 enum ImageState {
@@ -23,8 +17,6 @@ enum ImageState {
     FlippedHorizontally,
     FlippedVerticallyAndHorizontally,
 }
-
-// fn set_bottom_screen_image(image_state: &ImageState, bottom_screen: &mut dyn Screen) {}
 
 /// If the A button is pressed, we change the picture state.
 /// If the picture state is in the original state, we change it to the FlippedVetically
@@ -81,6 +73,38 @@ fn image_state_to_image_bytes<'a>(
     }
 }
 
+/// Generates the image permutations.
+/// It would be nice if we could use `lazy_static` here on the 3ds,
+/// but I doubt it would work.
+fn generate_image_permutations(
+    image: &[u8],
+    height: usize,
+) -> (
+    Vec<u8>, // Flipped vertically
+    Vec<u8>, // Flipped horizontally
+    Vec<u8>, // Flipped vertically and horizontally
+) {
+    let image_flipped_vertically: Vec<u8> = image.chunks(3).rev().flatten().copied().collect(); // We start with the original image.
+
+    // What we do is take the rows (which are the columns as the image is rotated 90 degrees)
+    // and reverse them.
+    let image_flipped_horizontally: Vec<u8> =
+        image.chunks(height * 3).rev().flatten().copied().collect();
+
+    let image_flipped_vertically_and_horizontally: Vec<u8> = image_flipped_horizontally
+        .chunks(3)
+        .rev()
+        .flatten()
+        .copied()
+        .collect();
+
+    (
+        image_flipped_vertically,
+        image_flipped_horizontally,
+        image_flipped_vertically_and_horizontally,
+    )
+}
+
 fn main() {
     ctru::use_panic_handler();
 
@@ -89,9 +113,10 @@ fn main() {
     let apt = Apt::new().expect("Couldn't obtain APT controller");
     let _console = Console::new(gfx.top_screen.borrow_mut());
 
-    println!("\x1b[21;4HPress A to flip the image over the x-axis.");
-    println!("\x1b[22;4HPress B to flip the image over the y-axis.");
-    println!("\x1b[29;16HPress Start to exit");
+    println!("\x1b[19;4HA boykisser appears!");
+
+    println!("\x1b[21;4HPress A to flip him vertically.");
+    println!("\x1b[23;4HPress B to flip him horizontally.");
 
     let mut bottom_screen = gfx.bottom_screen.borrow_mut();
 
@@ -101,33 +126,17 @@ fn main() {
     // Swapping buffers commits the change from the line above.
     bottom_screen.swap_buffers();
 
-    let image_flipped_vertically: Vec<u8> = IMAGE.chunks(3).rev().flatten().copied().collect(); // We start with the original image.
+    // We generate the image permutations.
+    // We will pass these in to functions as references as
+    // we can't use `lazy_static` on the 3ds.
+    let (
+        image_flipped_vertically,
+        image_flipped_horizontally,
+        image_flipped_vertically_and_horizontally,
+    ) = generate_image_permutations(IMAGE, 240);
 
-    // What we do is take the rows (which are the columns as the image is rotated 90 degrees)
-    // and reverse them.
-    let image_flipped_horizontally: Vec<u8> =
-        IMAGE.chunks(240 * 3).rev().flatten().copied().collect();
-
-    let image_flipped_vertically_and_horizontally: Vec<u8> = image_flipped_horizontally
-        .chunks(3)
-        .rev()
-        .flatten()
-        .copied()
-        .collect();
-
-    let mut image_bytes = IMAGE;
-
+    // Initial image state.
     let mut image_state = ImageState::Original;
-
-    // We assume the image is the correct size already, so we drop width + height.
-    let frame_buffer = bottom_screen.raw_framebuffer();
-
-    // We copy the image to the framebuffer.
-    unsafe {
-        frame_buffer
-            .ptr
-            .copy_from(image_bytes.as_ptr(), image_bytes.len());
-    }
 
     while apt.main_loop() {
         hid.scan_input();
@@ -142,22 +151,10 @@ fn main() {
             &image_flipped_vertically_and_horizontally,
         );
 
-        let frame_buffer = bottom_screen.raw_framebuffer();
-
-        // We render the newly switched image to the framebuffer.
-        unsafe {
-            frame_buffer
-                .ptr
-                .copy_from(image_bytes.as_ptr(), image_bytes.len());
-        }
-
-        /* if hid.keys_down().contains(KeyPad::A) {
-            image_bytes = if std::ptr::eq(image_bytes, IMAGE) {
-                &flipped_image_over_x_axis[..]
-            } else {
-                IMAGE
-            };
-
+        // Code block to write to the screen.
+        // This does *not* like to be put into a function,
+        // so it has to just be copied around
+        {
             let frame_buffer = bottom_screen.raw_framebuffer();
 
             // We render the newly switched image to the framebuffer.
@@ -167,28 +164,13 @@ fn main() {
                     .copy_from(image_bytes.as_ptr(), image_bytes.len());
             }
         }
-
-        if hid.keys_down().contains(KeyPad::B) {
-            image_bytes = if std::ptr::eq(image_bytes, IMAGE) {
-                &flipped_image_over_y_axis[..]
-            } else {
-                IMAGE
-            };
-
-            let frame_buffer = bottom_screen.raw_framebuffer();
-
-            // We render the newly switched image to the framebuffer.
-            unsafe {
-                frame_buffer
-                    .ptr
-                    .copy_from(image_bytes.as_ptr(), image_bytes.len());
-            }
-        } */
 
         // Flush framebuffers. Since we're not using double buffering,
         // this will render the pixels immediately
         bottom_screen.flush_buffers();
 
+        // This makes sure that we wait long enough to not
+        // render more than 60 frames per second.
         gfx.wait_for_vblank();
     }
 }
