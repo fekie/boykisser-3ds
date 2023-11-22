@@ -1,5 +1,5 @@
 # boykisser-3ds
-This is a silly little Rust Homebrew program for the 3ds.
+A silly little Rust Homebrew program for the 3ds.
 
 # Media
 <img src="assets/boykisser_3ds_image.jpeg" height="500px" alt="A picture of this program running on a 3ds.">
